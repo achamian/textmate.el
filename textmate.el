@@ -1,4 +1,4 @@
-;; textmate.el --- TextMate minor mode for Emacs
+;;; textmate.el --- TextMate minor mode for Emacs
 
 ;; Copyright (C) 2008, 2009 Chris Wanstrath <chris@ozmm.org>
 
@@ -69,7 +69,7 @@
   "Regexp of files to exclude from `textmate-goto-file'.")
 
 (defvar *textmate-project-roots*
-  '(".git" ".hg" "Rakefile" "Makefile" "README" "build.xml")
+  '(".git" ".hg" "Rakefile" "Makefile" "README" "build.xml" ".emacs-project")
   "The presence of any file/directory in this list indicates a project root.")
 
 (defvar textmate-use-file-cache t
@@ -268,7 +268,7 @@ Symbols matching the text at point are put first in the completion list."
                     (setq symbol-names (cons symbol
                                              (delete symbol symbol-names))))
                   matching-symbols)))))
-    (let* ((selected-symbol (ido-completing-read "Symbol? " symbol-names))
+    (let* ((selected-symbol (ido-completing-read "Symbol? " (reverse symbol-names)))
            (position (cdr (assoc selected-symbol name-and-pos))))
       (goto-char (if (overlayp position) (overlay-start position) position)))))
 
@@ -276,18 +276,17 @@ Symbols matching the text at point are put first in the completion list."
   "Uses your completing read to quickly jump to a file in a project."
   (interactive)
   (let ((root (textmate-project-root)))
-    (when (null root)
-      (error
-       (concat
-        "Can't find a suitable project root ("
-        (string-join " " *textmate-project-roots* )
-        ")")))
-    (find-file
-     (concat
+    (when (null root) 
+      (error "Can't find any .git directory"))
+    (find-file 
+     (concat 
       (expand-file-name root) "/"
-      (textmate-completing-read
+      (textmate-completing-read 
        "Find file: "
-       (textmate-cached-project-files root))))))
+       (mapcar
+	(lambda (e)
+	  (replace-regexp-in-string (textmate-project-root) "" e))
+	(textmate-cached-project-files (textmate-project-root))))))))
 
 (defun textmate-clear-cache ()
   "Clears the project root and project files cache. Use after adding files."
